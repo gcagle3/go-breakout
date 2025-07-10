@@ -2,6 +2,8 @@
 
 A simple clone of the classic **Breakout** arcade game written in Golang using the [Ebiten](https://ebiten.org) 2D game library.
 
+![media/go-breakout.png](media/go-breakout.png)
+
 ## Game Features
 
 - Brick-breaking action across multiple levels
