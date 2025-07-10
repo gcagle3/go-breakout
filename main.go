@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image/color"
 	"log"
@@ -24,6 +25,11 @@ const (
 	brickW    = 56
 	brickH    = 24
 	brickGap  = 4
+)
+
+var (
+	startingLives = flag.Int("lives", 3, "Number of starting lives")
+	startingLevel = flag.Int("level", 1, "Starting level")
 )
 
 type Brick struct {
@@ -50,7 +56,7 @@ type Game struct {
 	ballImage *ebiten.Image
 }
 
-func NewGame() *Game {
+func NewGame(lives, level int) *Game {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	g := &Game{
 		ballX:   screenWidth / 2,
@@ -59,8 +65,8 @@ func NewGame() *Game {
 		ballVY:  -3,
 		paddleX: screenWidth/2 - initialPaddleW/2,
 		paddleW: initialPaddleW,
-		lives:   3,
-		level:   1,
+		lives:   lives,
+		level:   level,
 		status:  "playing",
 		rng:     rng,
 	}
@@ -242,13 +248,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Clear screen
 	screen.Fill(color.RGBA{0x10, 0x10, 0x10, 0xff})
 
-	// Draw bricks
+	// Draw score, lives, level at the top of the screen
+	statusText := fmt.Sprintf("Score: %d  Lives: %d  Level: %d", g.score, g.lives, g.level)
+	ebitenutil.DebugPrintAt(screen, statusText, 10, 5)
+
+	// Draw bricks below the status text
+	brickOffsetY := 24.0 // push bricks down to leave space for UI
 	for i := range g.bricks {
 		for j := range g.bricks[i] {
 			b := g.bricks[i][j]
 			if b.Visible {
 				x := float64(j*(brickW+brickGap) + brickGap)
-				y := float64(i*(brickH+brickGap) + brickGap)
+				y := float64(i*(brickH+brickGap)+brickGap) + brickOffsetY
 				ebitenutil.DrawRect(screen, x, y, brickW, brickH, b.Color)
 			}
 		}
@@ -261,10 +272,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(g.ballX-ballRadius, g.ballY-ballRadius)
 	screen.DrawImage(g.ballImage, op)
-
-	// Draw score, lives, level
-	statusText := fmt.Sprintf("Score: %d  Lives: %d  Level: %d", g.score, g.lives, g.level)
-	ebitenutil.DebugPrint(screen, statusText)
 
 	// Draw game over or win message
 	if g.status == "gameover" {
@@ -285,10 +292,12 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
+	flag.Parse() // Parse command-line arguments
+
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Go Breakout")
 
-	game := NewGame()
+	game := NewGame(*startingLives, *startingLevel)
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
